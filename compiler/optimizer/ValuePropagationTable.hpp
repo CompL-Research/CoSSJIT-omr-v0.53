@@ -927,6 +927,10 @@ TR::Node * constrainLongBitCount(OMR::ValuePropagation *vp, TR::Node *node);
 #define pdModifyPrecisionVPHandler constrainChildren
 #define countDigitsVPHandler constrainChildren
 #define BCDCHKVPHandler constrainBCDCHK
+#define loadHeapifiableAddrVPHandler constrainLoadaddr
+#define possibleHeapificationVPHandler constrainChildren
+#define possibleHeapificationAtReturnVPHandler constrainChildren
+#define possibleHeapificationAtStoreVPHandler constrainChildren
 #define zdchkVPHandler constrainChildren
 #endif
 

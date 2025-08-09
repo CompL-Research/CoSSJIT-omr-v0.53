@@ -493,7 +493,7 @@ void TR_UseDefInfo::fillInDataStructures(AuxiliaryData &aux)
 
 bool TR_UseDefInfo::isLoadAddrUse(TR::Node * node)
    {
-   return node->getOpCodeValue() == TR::loadaddr;
+   return node->getOpCodeValue() == TR::loadaddr || node->getOpCodeValue() == TR::loadHeapifiableAddr;
    }
 
 void TR_UseDefInfo::findTrivialSymbolsToExclude(TR::Node *node, TR::TreeTop *treeTop, AuxiliaryData &aux)
