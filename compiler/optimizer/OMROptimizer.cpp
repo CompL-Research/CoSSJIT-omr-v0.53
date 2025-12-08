@@ -155,6 +155,7 @@ const OptimizationStrategy reorderArrayIndexOpts[] =
 
 const OptimizationStrategy cheapObjectAllocationOpts[] =
    {
+   { eachEscapeAnalysisPassGroup, IfEAOpportunities },
    { explicitNewInitialization, IfNews      }, // do before local dead store
    { endGroup                               }
    };
