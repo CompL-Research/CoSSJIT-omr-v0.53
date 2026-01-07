@@ -1253,6 +1253,7 @@ TR_DumbInliner::inlineCallTargets(TR::ResolvedMethodSymbol * callerSymbol, TR_Ca
             }
 
          // dont inline into cold blocks
+         // [AA] Can add a check for static analysis checks 
          if (block->isCold() ||
             (TR::isJ9() && !getPolicy()->inlineMethodEvenForColdBlocks(callerSymbol->getResolvedMethod()) && block->getFrequency() >= 0 && block->getFrequency() < veryColdBorderFrequency) ||
             !block->getExceptionPredecessors().empty())

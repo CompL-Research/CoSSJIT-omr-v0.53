@@ -35,9 +35,9 @@ enum TR_InlinerFailureReason
    InlineableTarget,       //Not A failure Reason
    OverrideInlineTarget,   //Not A failure Reason
    TryToInlineTarget,      //Not A failure Reason
-   Trimmed_List_of_Callees,
+   Trimmed_List_of_Callees, // [AA] Multiple callees existed (e.g., polymorphic call), but some were removed due to heuristics
    Recognized_Callee,
-   Exceeds_ByteCode_Threshold,
+   Exceeds_ByteCode_Threshold, // [AA] The callee’s bytecode size exceeds the basic inline size limit.
    Recursive_Callee,
    Excessive_FanIn,
    NonInlineable_WCode,
@@ -66,7 +66,7 @@ enum TR_InlinerFailureReason
    Exceeded_Caller_SiteSize,
    ProfileManager_ColdCall,
    Decompilation_Point,
-   No_Inlineable_Targets,
+   No_Inlineable_Targets,  // [AA] After pruning, no remaining callees were suitable for inlining.
    Cant_Match_Parms_to_Args,
    Needs_Method_Tracing,
    Will_Create_Unallowed_Temps,
