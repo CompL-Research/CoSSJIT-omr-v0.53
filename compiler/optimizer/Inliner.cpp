@@ -4205,6 +4205,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
       {
       TR_CallTarget *calltarget = callsite->getTarget(i);
 
+      // [AA] 1. Multiple-target inlining control
       if (!supportsMultipleTargetInlining () && i > 0)
          {
          callsite->removecalltarget(i,tracer(),Exceeds_ByteCode_Threshold);
@@ -4213,6 +4214,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          }
 
       TR_ASSERT(calltarget->_guard, "assertion failure");
+      // [AA] 2. Some methods must remain callable for profiling, tracing, JVMTI, etc.
       if (!getPolicy()->canInlineMethodWhileInstrumenting(calltarget->_calleeMethod))
          {
          callsite->removecalltarget(i,tracer(),Needs_Method_Tracing);
@@ -4221,7 +4223,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          }
 
       // only inline recursive calls once
-      //
+      // [AA] 3. 3. Recursive inlining limit
       static char *selfInliningLimitStr = feGetEnv("TR_selfInliningLimit");
       int32_t selfInliningLimit =
            selfInliningLimitStr ? atoi(selfInliningLimitStr)
@@ -4236,6 +4238,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          continue;
          }
 
+      // [AA] 4. General inlineability policy
       TR_InlinerFailureReason checkInlineableTarget = getPolicy()->checkIfTargetInlineable(calltarget, callsite, comp());
 
       if (checkInlineableTarget != InlineableTarget)
@@ -4246,6 +4249,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          continue;
          }
 
+      // [AA] 5. Determine if this is a “real” virtual guard
       bool realGuard = false;
 
       if (comp()->getHCRMode() != TR::none)
@@ -4261,7 +4265,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          if ((calltarget->_guard->_kind != TR_NoGuard) && (calltarget->_guard->_kind != TR_InnerGuard))
             realGuard = true;
          }
-
+      // [AA] 6. Virtual inlining disabled
       if (realGuard && (!inlineVirtuals() || comp()->getOption(TR_DisableVirtualInlining)))
          {
          tracer()->insertCounter(Virtual_Inlining_Disabled, callsite->_callNodeTreeTop);
@@ -4269,7 +4273,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          i--;
          continue;
          }
-
+      // [AA] 7. Non-virtual inlining disabled
       static const char * onlyVirtualInlining = feGetEnv("TR_OnlyVirtualInlining");
       if (comp()->getOption(TR_DisableNonvirtualInlining) && !realGuard)
          {
@@ -4278,7 +4282,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          i--;
          continue;
          }
-
+      // [AA] 8. Synchronized methods (Inlining synchronized methods complicates monitor handling)
       static const char * dontInlineSyncMethods = feGetEnv("TR_DontInlineSyncMethods");
       if (calltarget->_calleeMethod->isSynchronized() && (!inlineSynchronized() || comp()->getOption(TR_DisableSyncMethodInlining)))
          {
@@ -4287,7 +4291,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          i--;
          continue;
          }
-
+      // [AA] 9. Exception-heavy methods
       if (debug("dontInlineEHAware") && calltarget->_calleeMethod->numberOfExceptionHandlers() > 0)
          {
          tracer()->insertCounter(EH_Aware_Callee,callsite->_callNodeTreeTop);
@@ -4296,6 +4300,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          continue;
          }
 
+      // [AA] 10. @DontInline / directive-based exclusions
       if (getPolicy()->tryToInline(calltarget, callStack, false))
          {
          tracer()->insertCounter(DontInline_Callee,callsite->_callNodeTreeTop);
@@ -4304,6 +4309,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          continue;
          }
 
+      // [AA] 11. @InlineOnly / regex filtering
          {
          TR::SimpleRegex * regex = comp()->getOptions()->getOnlyInline();
          if (regex && !TR::SimpleRegex::match(regex, calltarget->_calleeMethod))
@@ -4314,7 +4320,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
             continue;
             }
          }
-
+      // [AA]: 12. Initial bytecode size estimation
       int32_t bytecodeSize = getPolicy()->getInitialBytecodeSize(calltarget->_calleeMethod, calltarget->_calleeSymbol, comp());
 
       if (!forceInline(calltarget))
@@ -4328,11 +4334,14 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
             traceMsg( comp(), "Reducing bytecode size to %d because it's method of FloatingDecimal\n", bytecodeSize);
          }
 
+      // [AA] 13. Try-to-inline forced
       bool toInline = getPolicy()->tryToInline(calltarget, callStack, true);
 
       TR_ByteCodeInfo &bcInfo = callsite->_bcInfo;
       // get the number of locals in the callee
       int32_t numberOfLocalsInCallee = calltarget->_calleeMethod->numberOfParameterSlots();// + calleeResolvedMethod->numberOfTemps();
+      
+      //[AA]14. Final size & budget check
       if (!forceInline(calltarget) &&
             exceedsSizeThreshold(callsite, bytecodeSize,
                                    (callsite->_callerBlock != NULL) ? callsite->_callerBlock :
