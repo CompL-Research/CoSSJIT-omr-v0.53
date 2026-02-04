@@ -4105,13 +4105,13 @@ void TR_InlinerBase::getSymbolAndFindInlineTargets(TR_CallStack *callStack, TR_C
       tracer()->dumpCallSite(callsite, "CallSite Before finding call Targets");
 
    //////////
-
+   // printf("IN INLINING: The current Method is: %s and the callsite is %d and Max BCS is %d==== \n",comp()->signature(), callsite->_bcInfo.getByteCodeIndex(),  callStack->_maxCallSize);
    if (findNewTargets)
       {
       callsite->findCallSiteTarget(callStack, this);
       applyPolicyToTargets(callStack, callsite);
       }
-
+   // printf("IN INLINING: After applying the policy the value of max callSize: %d\n",callStack->_maxCallSize);
    if(tracer()->debugLevel())
       tracer()->dumpCallSite(callsite, "CallSite after finding call Targets");
 
@@ -4201,10 +4201,68 @@ bool OMR_InlinerPolicy::shouldRemoveDifferingTargets(TR::Node *callNode)
 
 void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *callsite)
    {
+   // [AA]
+   // if (TR::Options::_staticAnalysisNonEscapingMap.find(std::string(comp()->signature())) != TR::Options::_staticAnalysisNonEscapingMap.end()) {
+   _inlining_result = TR::Options::_staticAnalysisNonEscapingMap[std::string(comp()->signature())].second.second.first.first;
+   // }
+   // [AA] Debug Code: Inline Results for the current method from static analysis if present.
+   // for (const auto& thirdEntry : _inlining_result) {
+   //    int number = thirdEntry.first;
+   //    const auto& inliningResults = thirdEntry.second;
+   //    printf("  3. Inline Result at BCI: %d\n", number);
+   //    for (const auto& methodEntry : inliningResults) {
+   //       const std::string& methodName = methodEntry.first;
+   //       const std::vector<int32_t>& indices = methodEntry.second;
+   //       printf("    Method: %s\n", methodName.c_str());
+   //       printf("    STACK ALLOCATABLE BCI: {");
+   //       for (size_t i = 0; i < indices.size(); ++i) {
+   //          printf("%d", indices[i]);
+   //          if (i < indices.size() - 1) printf(", ");
+   //       }
+   //       printf("}\n");
+   //    }
+   // }
    for (int32_t i=0; i<callsite->numTargets(); i++)
       {
+      // bool found = false;
       TR_CallTarget *calltarget = callsite->getTarget(i);
+      
+      // printf(" Inside POLICY: The current Method is: %s ==== \n",comp()->signature());
+      // printf(" 1. Current value of max callSize: %d\n",callStack->_maxCallSize);
+      // //[AA]
+      // // 1. Get the bytecode index for the callsite
+      // int32_t jit_bc = callsite->_bcInfo.getByteCodeIndex();
+      // printf(" The JIT BCI: %d \n", jit_bc);
+      // // 2. Get the callee name
+      // TR_ResolvedMethod* jit_callee_name = calltarget->_calleeMethod;
+      // // Convert to string key
+      // const char* extName = jit_callee_name->signature(comp()->trMemory(), heapAlloc);
+      // std::string calleeName(extName);
+      // printf(" The JIT Callee Name: %s\n", calleeName.c_str());
+      // // 3. Iterate over the static result and see if there is callee result if yes then continue and do the inlining.
+      // auto bci_exists = _inlining_result.find(jit_bc);
+      // if (bci_exists != _inlining_result.end()) {
+      //    const auto &callee = bci_exists->second;
 
+      //    auto innerIt = callee.find(calleeName);
+      //    if (innerIt != callee.end()) {
+      //       const std::vector<int32_t> &values = innerIt->second;
+      //       printf(" FOUND !!!!! Static Analysis results says inline \n");
+      //       callStack->_maxCallSize = (uint32_t)callStack->_maxCallSize * 2;
+      //       printf(" 2. Current value of max callSize: %d\n",callStack->_maxCallSize);
+      //       found = true;
+      //       continue;
+      //    } else {
+      //       // printf("Static Analysis results: callee not found!!! ");
+      //    }
+      // } else {
+      //    // printf("NO Static Analysis results found ");
+      // }
+      // if(found) {
+      //    i--;
+      //    continue;
+      // }
+      // printf("3. Value of max callSize: %d",callStack->_maxCallSize);
       // [AA] 1. Multiple-target inlining control
       if (!supportsMultipleTargetInlining () && i > 0)
          {
@@ -4223,7 +4281,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          }
 
       // only inline recursive calls once
-      // [AA] 3. 3. Recursive inlining limit
+      // [AA] 3. Recursive inlining limit
       static char *selfInliningLimitStr = feGetEnv("TR_selfInliningLimit");
       int32_t selfInliningLimit =
            selfInliningLimitStr ? atoi(selfInliningLimitStr)
@@ -4360,6 +4418,11 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
          else
            {
             // debugging counters inserted in call
+            // if(found) {
+            //    callStack->_maxCallSize = callStack->_maxCallSize * 2;
+            //    printf("4. Value of max callSize: %d",callStack->_maxCallSize);
+            //    continue;
+            // }
             callsite->removecalltarget(i, tracer(), Exceeds_ByteCode_Threshold);
             i--;
             continue;

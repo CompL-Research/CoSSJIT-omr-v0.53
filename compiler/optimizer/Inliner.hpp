@@ -332,6 +332,8 @@ class TR_InlinerBase: public TR_HasRandomGenerator
       void getSymbolAndFindInlineTargets(TR_CallStack *, TR_CallSite *, bool findNewTargets=true);
 
       void applyPolicyToTargets(TR_CallStack *, TR_CallSite *);
+      // [AA]
+      std::unordered_map<int32_t, std::unordered_map<std::string, std::vector<int32_t>>> _inlining_result; 
 
       bool forceInline(TR_CallTarget *calltarget);
       bool forceVarInitInlining(TR_CallTarget *calltarget);
