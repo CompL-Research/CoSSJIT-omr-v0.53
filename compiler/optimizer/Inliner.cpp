@@ -4105,7 +4105,7 @@ void TR_InlinerBase::getSymbolAndFindInlineTargets(TR_CallStack *callStack, TR_C
       tracer()->dumpCallSite(callsite, "CallSite Before finding call Targets");
 
    //////////
-   // printf("IN INLINING: The current Method is: %s and the callsite is %d and Max BCS is %d==== \n",comp()->signature(), callsite->_bcInfo.getByteCodeIndex(),  callStack->_maxCallSize);
+   heuristicTrace(tracer(), "  ===> [AA] (getSymbolAndFindInlineTargets) IN INLINING: The current Method is: %s and the callsite is %d and Max BCS is %d==== \n",comp()->signature(), callsite->_bcInfo.getByteCodeIndex(),  callStack->_maxCallSize);
    if (findNewTargets)
       {
       callsite->findCallSiteTarget(callStack, this);
