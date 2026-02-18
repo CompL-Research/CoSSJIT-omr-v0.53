@@ -162,7 +162,7 @@ const OptimizationStrategy cheapObjectAllocationOpts[] =
 
 const OptimizationStrategy expensiveObjectAllocationOpts[] =
    {
-   { eachEscapeAnalysisPassGroup, IfEAOpportunities    },
+   { eachEscapeAnalysisPassGroup, Always    }, //[AA] Aditya Updated for cold level invocation 
    { explicitNewInitialization,   IfNews               }, // do before local dead store
    { endGroup                                          }
    };
