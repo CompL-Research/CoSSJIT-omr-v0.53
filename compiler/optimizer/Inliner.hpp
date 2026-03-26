@@ -328,6 +328,8 @@ class TR_InlinerBase: public TR_HasRandomGenerator
       void setStoreToCachedPrivateStatic(TR::Node *node) { _storeToCachedPrivateStatic = node; }
       TR::Node *getStoreToCachedPrivateStatic() { return _storeToCachedPrivateStatic; }
       bool alwaysWorthInlining(TR_ResolvedMethod * calleeMethod, TR::Node *callNode);
+      // [AA]
+      bool isTargetSuggestedByStaticAnalysis(TR_ResolvedMethod * calleeMethod, TR::Node *callNode);     
 
       void getSymbolAndFindInlineTargets(TR_CallStack *, TR_CallSite *, bool findNewTargets=true);
 

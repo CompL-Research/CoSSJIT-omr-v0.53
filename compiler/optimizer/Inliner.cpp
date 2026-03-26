@@ -509,6 +509,37 @@ TR_InlinerBase::alwaysWorthInlining(TR_ResolvedMethod * calleeMethod, TR::Node *
    }
 
 bool
+TR_InlinerBase::isTargetSuggestedByStaticAnalysis(TR_ResolvedMethod * calleeMethod, TR::Node *callNode)
+   {
+      heuristicTrace(tracer(),"Checking results in isTargetSuggestedByStaticAnalysis for static analysis suggestions for weight increase \n");
+      // Check if there are results for caller method in the static analysis result. 
+      if (TR::Options::_staticAnalysisNonEscapingMap.find(std::string(comp()->signature())) != TR::Options::_staticAnalysisNonEscapingMap.end()) {
+         // Static Analysis Map for Inlining
+         std::unordered_map<int32_t, std::unordered_map<std::string, std::vector<int32_t>>> static_inlining_result;
+         static_inlining_result = TR::Options::_staticAnalysisNonEscapingMap[std::string(comp()->signature())].second.second.first.first;
+         const char * signature = calleeMethod->signature(comp()->trMemory());
+         std::string calleeName(signature);
+         
+         auto bci_exists =  static_inlining_result.find(callNode->getByteCodeIndex());
+         if (bci_exists != static_inlining_result.end()) {
+            const auto &callee = bci_exists->second;
+            heuristicTrace(tracer(),"The current BCI is:%d and callee method name is %p \n",callNode->getByteCodeIndex(),calleeName);
+            auto innerIt = callee.find(calleeName);
+            if (innerIt != callee.end()) {
+               heuristicTrace(tracer(),"!!! SUCCESS !!! Static analysis suggested for this method: %p to get be inlined at :%d in the caller method %p \n",calleeName, callNode->getByteCodeIndex(),comp()->signature());
+               return true;
+            } else {
+               heuristicTrace(tracer(),"!!! FAILURE !!! No Callee found: No suggestion for method: %p at :%d in the caller method %p \n",calleeName, callNode->getByteCodeIndex(),comp()->signature());
+               return false;
+            }
+         } else {
+            return false;
+         }
+      }
+      return false;
+   }
+
+bool
 OMR_InlinerPolicy::alwaysWorthInlining(TR_ResolvedMethod * calleeMethod, TR::Node *callNode)
    {
    return false;
@@ -1331,20 +1362,28 @@ TR_DumbInliner::analyzeCallSite(
          {
          if (tryToInline("overriding getMaxBytecodeIndex check", calltarget))
             {
+            TR::DebugCounter::prependDebugCounter(comp(), "Dumb/Inlining/Override", callNodeTreeTop);
+
             if (comp()->trace(OMR::inlining))
                traceMsg(comp(), "inliner: overriding getMaxBytecodeIndex check\n");
             }
          else if (alwaysWorthInlining(calltarget->_calleeSymbol->getResolvedMethod(), callNode))
             {
+               TR::DebugCounter::prependDebugCounter(comp(), "Dumb/Inlining/AlwaysWorthInlining", callNodeTreeTop);
+
             if (comp()->trace(OMR::inlining))
                traceMsg(comp(), "inliner: overriding getMaxBytecodeIndex check because it's always worth inlining\n");
             }
-         // else if(isTargetSuggestedByStaticAnalysis(calltarget->_calleeSymbol->getResolvedMethod(), callNode)) {
-         //    if (comp()->trace(OMR::inlining))
-         //       traceMsg(comp(), "inliner: overriding getMaxBytecodeIndex check because Aditya's Static Analysis said so !!! :) \n");
-         // }
+         else if(isTargetSuggestedByStaticAnalysis(calltarget->_calleeSymbol->getResolvedMethod(), callNode)) {
+            TR::DebugCounter::prependDebugCounter(comp(), "Dumb/Inlining/Static", callNodeTreeTop);
+
+            if (comp()->trace(OMR::inlining))
+               traceMsg(comp(), "inliner: overriding getMaxBytecodeIndex check because Aditya's Static Analysis said so !!! :) \n");
+         }
          else
             {
+            TR::DebugCounter::prependDebugCounter(comp(), "Dumb/Inlining/NotInlined", callNodeTreeTop);
+
             if (comp()->trace(OMR::inlining))
                traceMsg(comp(), "inliner: failed: getInitialBytecodeSize(%d) > %d for %s\n",
                        byteCodeSize, callStack->_maxCallSize, tracer()->traceSignature(calltarget->_calleeSymbol));
@@ -1358,7 +1397,7 @@ TR_DumbInliner::analyzeCallSite(
             continue;
             }
          }
-
+      TR::DebugCounter::prependDebugCounter(comp(), "Dumb/Inlining/NoSizeIssue", callNodeTreeTop);
       success |= inlineCallTarget(callStack, calltarget, false);
       }
    return success;
@@ -4423,7 +4462,7 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
            {
             // debugging counters inserted in call
             // if(found) {
-            //    callStack->_maxCallSize = callStack->_maxCallSize * 2;
+            //    callStack->_maxCallSizue = callStack->_maxCallSize * 2;
             //    printf("4. Value of max callSize: %d",callStack->_maxCallSize);
             //    continue;
             // }
