@@ -1339,6 +1339,10 @@ TR_DumbInliner::analyzeCallSite(
             if (comp()->trace(OMR::inlining))
                traceMsg(comp(), "inliner: overriding getMaxBytecodeIndex check because it's always worth inlining\n");
             }
+         // else if(isTargetSuggestedByStaticAnalysis(calltarget->_calleeSymbol->getResolvedMethod(), callNode)) {
+         //    if (comp()->trace(OMR::inlining))
+         //       traceMsg(comp(), "inliner: overriding getMaxBytecodeIndex check because Aditya's Static Analysis said so !!! :) \n");
+         // }
          else
             {
             if (comp()->trace(OMR::inlining))
