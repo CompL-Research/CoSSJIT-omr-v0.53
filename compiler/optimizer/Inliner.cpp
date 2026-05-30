@@ -1351,6 +1351,9 @@ TR_DumbInliner::analyzeCallSite(
    if (!callsite->numTargets())
       return false;
    bool success = false;
+   if (comp()->trace(OMR::inlining)){
+      traceMsg(comp(), "[AA] In analyzeCallSite of Dumb Inliner: \n");
+   }
    for(int32_t i=0;i<callsite->numTargets();i++)
       {
       TR_CallTarget *calltarget = callsite->getTarget(i);
@@ -1376,6 +1379,7 @@ TR_DumbInliner::analyzeCallSite(
             }
          else if(isTargetSuggestedByStaticAnalysis(calltarget->_calleeSymbol->getResolvedMethod(), callNode)) {
             TR::DebugCounter::prependDebugCounter(comp(), "Dumb/Inlining/Static", callNodeTreeTop);
+            TR::DebugCounter::prependDebugCounter(comp(), "BetterInline/Dumb/Stack", callNodeTreeTop);
 
             if (comp()->trace(OMR::inlining))
                traceMsg(comp(), "inliner: overriding getMaxBytecodeIndex check because Aditya's Static Analysis said so !!! :) \n");
